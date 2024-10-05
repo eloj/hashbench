@@ -19,6 +19,7 @@ typedef uint32_t hash32_t(const void *data, size_t len, void *state);
 typedef uint64_t hash64_t(const void *data, size_t len, void *state);
 
 static size_t n_iter = 100;
+static int do_dump_buckets = 0;
 
 #include "hash/hash_murmur3.c"
 #include "hash/hash_djb2.c"
@@ -230,6 +231,21 @@ void print_results_human(struct hash_bench_result *res[]) {
 	}
 }
 
+void dump_buckets(struct hash_bench_result *res[], size_t word_count) {
+	for (int i = 0 ; i < NUM_HASHES ; ++i) {
+		struct hash_bench_result *bres = res[i];
+		struct hash_t *hash = &hashes[bres->hash_idx];
+
+		if (i == 0)
+			printf("# %zu words, %d buckets\n", word_count, bres->n_buckets);
+		printf("\"%s\",", hash->name);
+		for (int j = 0 ; j < bres->n_buckets ; ++j) {
+			printf("%zu,", bres->buckets[j]);
+		}
+		printf("\n");
+	}
+}
+
 void run_benchmarks(struct hash_bench_result *res[], const char *words, size_t word_count, size_t buckets) {
 	for (int i = 0 ; i < NUM_HASHES ; ++i) {
 		res[i] = create_hash_bench_result(i, buckets);
@@ -297,6 +313,10 @@ int main(int argc, char *argv[])
 	run_benchmarks(res, words, word_count, n_buckets);
 
 	print_results_human(res);
+
+	if (do_dump_buckets) {
+		dump_buckets(res, word_count);
+	}
 
 	for (size_t i = 0 ; i < NUM_HASHES ; ++i) {
 		free(res[i]);

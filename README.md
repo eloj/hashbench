@@ -63,7 +63,20 @@ The "best time!" is determined by the fastest single run, not the average.
 
 The score is an attempt to quantify how 'uniform' the hash function distribution is, by simulating using it to pick hash buckets.
 From this actual distribution we calculate the absolute differences squared compared to the ideal. A perfectly uniform distribution
-would score 0. The score is specific to the input set and the number of buckets.
+would score 0.
 
+The score is specific to the input set and the number of buckets.
 It is mostly useful for a quick reality check. If one of the scores is _wildly_ smaller (which is to say, worse) than the others,
 something is up. There is little statistical rigor here, this is not the place for evaluating hash function quality.
+
+The internal flag `do_dump_buckets` can be set to generate a CSV-style table of the bucket distribution for each hash function.
+
+```csv
+# 104334 words, 3 buckets
+"murmur3_32",34974,34728,34632,
+"djb2",38317,32941,33076,
+"jenkins",34626,34831,34877,
+"fnv1a_32",35021,34516,34797,
+"crc32c",34907,34601,34826,
+"siphash64",34746,34586,35002,
+```
