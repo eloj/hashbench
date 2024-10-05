@@ -21,7 +21,7 @@ All code is provided under the [MIT License](LICENSE) unless otherwise specified
 Add a file to the [hash](hash) directory containing your implementation. You need to adhere to the One True Prototype for a hash function:
 
 ```c
-typedef uint{32,64}_t hash32_t(const void *data, size_t len, void *state);
+uint{32,64}_t hash(const void *data, size_t len, void *state);
 ```
 
 Next include your implementation in the main benchmark file, `bench_hashes.c`, and add an entry to the `hashes` array.
@@ -57,7 +57,13 @@ siphash64:
 1.94/1.96 ms (min/avg), ~429.42 MiB/s (avg) (hash:0x17f6e2be8c4dbd51), score=-3940.50 slowest.
 ```
 
-The 'time to iterate' is measures how much time it takes just to parse through the input once, without any hashing.
-The "best time!" is determined by the fastest single run, not the average. The score is an attempt to quantify
-how 'uniform' the hash function distribution is, when the hash is used to pick a bucket. The score is specific to
-the input set and the number of buckets.
+The "time to iterate" measures how much time it takes just to parse through the input once, without any hashing.
+
+The "best time!" is determined by the fastest single run, not the average.
+
+The score is an attempt to quantify how 'uniform' the hash function distribution is, by simulating using it to pick hash buckets.
+From this actual distribution we calculate the absolute differences squared compared to the ideal. A perfectly uniform distribution
+would score 0. The score is specific to the input set and the number of buckets.
+
+It is mostly useful for a quick reality check. If one of the scores is _wildly_ smaller (which is to say, worse) than the others,
+something is up. There is little statistical rigor here, this is not the place for evaluating hash function quality.
