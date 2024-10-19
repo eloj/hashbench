@@ -42,7 +42,8 @@ static struct hash_t {
 	// { "siphash32",  hash_siphash_32, NULL, "randomsecretkey!" },
 	{ "siphash64",  NULL, hash_siphash_64, "randomsecretkey!" },
 };
-static const int NUM_HASHES = sizeof(hashes)/sizeof(hashes[0]);
+// Not a static const int because clang complains about its use in VLA.
+#define NUM_HASHES (int)(sizeof(hashes)/sizeof(hashes[0]))
 
 struct hash_bench_result {
 	int hash_idx;
@@ -248,9 +249,7 @@ void dump_buckets(struct hash_bench_result *res[], size_t word_count) {
 
 void run_benchmarks(struct hash_bench_result *res[], const char *words, size_t word_count, size_t buckets) {
 	for (int i = 0 ; i < NUM_HASHES ; ++i) {
-		res[i] = create_hash_bench_result(i, buckets);
-		struct hash_bench_result *bres = res[i];
-
+		struct hash_bench_result *bres = create_hash_bench_result(i, buckets);
 		struct hash_t *hash = &hashes[i];
 
 		bench_hash(hash->func32, hash->func64, hash->state, words, bres, n_iter);
@@ -267,6 +266,8 @@ void run_benchmarks(struct hash_bench_result *res[], const char *words, size_t w
 			bres->score /= buckets; // normalize over buckets
 			bres->score = -bres->score;
 		}
+
+		res[i] = bres;
 	}
 }
 
