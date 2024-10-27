@@ -19,7 +19,7 @@ bench_hashes: bench_hashes.c hash/hash_*.c
 	$(CC) $(CFLAGS) $< -o $@
 
 bench: bench_hashes
-	./bench_hashes /usr/share/dict/american-english 32 100
+	./bench_hashes /usr/share/dict/american-english 32 4 25
 
 backup:
 	@echo -e $(YELLOW)Making backup$(NC)

@@ -34,27 +34,36 @@ The arguments to `./bench_hashes` are in order:
 
 * A dictionary, whose strings will be hashed line-by-line.
 * The number of buckets to simulate.
-* The number of iterations.
+* The number of rounds/word.
+* The number of total iterations.
+
+Increasing the number of rounds, i.e. repeatedly hashing the same data n times,
+puts more weight onto the computational complexity of the hash function, since the data will be cache hot.
+
+Decreasing the rounds puts more weight on memory bandwidth. Setting it to 1 simulates streaming the
+whole input through the hash function, almost as if you're hashing one large input.
+
+Iterations are how many times to repeat the whole benchmark run. More repeats means more stable timings.
 
 ## Example output
 
 ```console
 $ make bench
-./bench_hashes /usr/share/dict/american-english 32 100
-Benchmarking hashes using '/usr/share/dict/american-english' with 32 buckets, 100 iterations.
-time to iterate: 0.52 ms (104334 words, 880750 bytes)
+./bench_hashes /usr/share/dict/american-english 32 4 25
+Benchmarking hashes using '/usr/share/dict/american-english' with 32 buckets, 4 rounds/word, 25 iterations.
+time to iterate: 0.65 ms (104334 words, 880750 bytes)
 murmur3_32:
-1.06/1.07 ms (min/avg), ~784.29 MiB/s (avg) (hash:0xd5062c3f), score=-3126.19
+0.51/0.55 ms (min/avg), ~1524.04 MiB/s (avg) (hash:0x5418b0fc), score=-3126.19
 djb2:
-1.12/1.15 ms (min/avg), ~729.51 MiB/s (avg) (hash:0x4cbe0431), score=-4321.12 worst score.
+0.55/0.55 ms (min/avg), ~1517.42 MiB/s (avg) (hash:0x32f810c4), score=-4321.12 worst score.
 jenkins:
-1.15/1.16 ms (min/avg), ~724.32 MiB/s (avg) (hash:0xe1f3917b), score=-2555.56 best score!
+0.75/0.76 ms (min/avg), ~1101.59 MiB/s (avg) (hash:0x87ce45ec), score=-2555.56 best score!
 fnv1a_32:
-1.16/1.17 ms (min/avg), ~719.44 MiB/s (avg) (hash:0xbb7971b3), score=-3994.62
+0.59/0.60 ms (min/avg), ~1405.95 MiB/s (avg) (hash:0xede5c6cc), score=-3994.62
 crc32c:
-1.03/1.04 ms (min/avg), ~806.96 MiB/s (avg) (hash:0x475fe08f), score=-2923.44 best time!
+0.46/0.47 ms (min/avg), ~1794.01 MiB/s (avg) (hash:0x1d7f823c), score=-2923.44 best time!
 siphash64:
-1.94/1.96 ms (min/avg), ~429.42 MiB/s (avg) (hash:0x17f6e2be8c4dbd51), score=-3940.50 slowest.
+1.60/1.62 ms (min/avg), ~520.06 MiB/s (avg) (hash:0x5fdb8afa3136f544), score=-3940.50 slowest.
 ```
 
 The "time to iterate" measures how much time it takes just to parse through the input once, without any hashing.

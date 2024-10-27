@@ -18,6 +18,7 @@
 typedef uint32_t hash32_t(const void *data, size_t len, void *state);
 typedef uint64_t hash64_t(const void *data, size_t len, void *state);
 
+static size_t n_rounds = 10;
 static size_t n_iter = 100;
 static int do_dump_buckets = 0;
 
@@ -87,7 +88,7 @@ struct hash_bench_result* create_hash_bench_result(int idx, int buckets) {
 	return res;
 }
 
-void bench_hash(hash32_t func32, hash64_t func64, void *hash_state, const char *words, struct hash_bench_result *res, int n_iter) {
+void bench_hash(hash32_t func32, hash64_t func64, void *hash_state, const char *words, struct hash_bench_result *res) {
 	struct timespec tp_start;
 	struct timespec tp_end;
 	char *ptr;
@@ -97,7 +98,7 @@ void bench_hash(hash32_t func32, hash64_t func64, void *hash_state, const char *
 
 	assert(!(func32 && func64));
 
-	for (int i = 0 ; i < n_iter ; ++i) {
+	for (size_t i = 0 ; i < n_iter ; ++i) {
 		const char *word = words;
 		memset(res->buckets, 0, sizeof(res->buckets[0])*res->n_buckets);
 		res->hashval_acc = 0;
@@ -107,9 +108,12 @@ void bench_hash(hash32_t func32, hash64_t func64, void *hash_state, const char *
 			START_TIMER();
 			while ((ptr = strchr(word, '\n')) != NULL) {
 				size_t len = ptr - word;
-				uint32_t hashval = func32(word, len, hash_state);
-				res->bytes += len;
-				res->hashval_acc += hashval;
+				uint32_t hashval = 0;
+				for (size_t rounds = 0 ; rounds < n_rounds ; ++rounds) {
+					hashval = func32(word, len, hash_state);
+					res->bytes += len;
+					res->hashval_acc += hashval;
+				}
 				if (res->n_buckets)
 					++res->buckets[hashval % res->n_buckets];
 				word = ptr + 1;
@@ -119,9 +123,12 @@ void bench_hash(hash32_t func32, hash64_t func64, void *hash_state, const char *
 			START_TIMER();
 			while ((ptr = strchr(word, '\n')) != NULL) {
 				size_t len = ptr - word;
-				uint64_t hashval = func64(word, len, hash_state);
-				res->bytes += len;
-				res->hashval_acc += hashval;
+				uint64_t hashval = 0;
+				for (size_t rounds = 0 ; rounds < n_rounds ; ++rounds) {
+					hashval = func64(word, len, hash_state);
+					res->bytes += len;
+					res->hashval_acc += hashval;
+				}
 				if (res->n_buckets)
 					++res->buckets[hashval % res->n_buckets];
 				word = ptr + 1;
@@ -201,14 +208,14 @@ void print_results_human(struct hash_bench_result *res[]) {
 
 		if (hash->func32) {
 			printf("%s:\n%.2f/%.2f ms (min/avg), ~%.2f MiB/s (avg) (hash:0x%" PRIx32 "), score=%.2f", hash->name,
-					bres->min_timer, bres->tot_timer / n_iter,
+					bres->min_timer / n_rounds, bres->tot_timer / (n_iter*n_rounds),
 					((bres->bytes / bres->tot_timer)*1000)/(1024*1024),
 					(uint32_t)bres->hashval_acc,
 					bres->score
 			);
 		} else if (hash->func64) {
 			printf("%s:\n%.2f/%.2f ms (min/avg), ~%.2f MiB/s (avg) (hash:0x%" PRIx64 "), score=%.2f", hash->name,
-					bres->min_timer, bres->tot_timer / n_iter,
+					bres->min_timer / n_rounds, bres->tot_timer / (n_iter*n_rounds),
 					((bres->bytes / bres->tot_timer)*1000)/(1024*1024),
 					bres->hashval_acc,
 					bres->score
@@ -252,7 +259,7 @@ void run_benchmarks(struct hash_bench_result *res[], const char *words, size_t w
 		struct hash_bench_result *bres = create_hash_bench_result(i, buckets);
 		struct hash_t *hash = &hashes[i];
 
-		bench_hash(hash->func32, hash->func64, hash->state, words, bres, n_iter);
+		bench_hash(hash->func32, hash->func64, hash->state, words, bres);
 
 		bres->score = 0;
 		// Calculate the sum of differences squared. Closer to zero is better ~= more uniform dist.
@@ -273,12 +280,16 @@ void run_benchmarks(struct hash_bench_result *res[], const char *words, size_t w
 
 int main(int argc, char *argv[])
 {
-	n_iter = argc > 3 ? atoi(argv[3]) : 100;
-	size_t n_buckets = argc > 2 ? atoi(argv[2]) : 32;
 	const char *dict = argc > 1 ? argv[1] : "/usr/share/dict/american-english";
+	size_t n_buckets = argc > 2 ? atoi(argv[2]) : 32;
+	n_rounds = argc > 3 ? atoi(argv[3]) : 10;
+	n_iter = argc > 4 ? atoi(argv[4]) : 100;
+
+	if (n_rounds < 1) n_rounds = 1;
+	if (n_iter < 1)   n_iter = 1;
 
 	size_t words_len = 0;
-	printf("Benchmarking hashes using '%s' with %zu buckets, %zu iterations.\n", dict, n_buckets, n_iter);
+	printf("Benchmarking hashes using '%s' with %zu buckets, %zu rounds/word, %zu iterations.\n", dict, n_buckets, n_rounds, n_iter);
 
 	char *words = read_entire_file(dict, &words_len);
 	if (words == NULL) {
