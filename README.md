@@ -3,7 +3,7 @@
 
 [![License](https://img.shields.io/github/license/eloj/hashbench)](LICENSE)
 
-A basic, fully self-contained hash benchmark written in C, that you can easily extend and plug new hash functions into.
+A _basic_, fully self-contained hash benchmark written in C, that you can easily extend and plug new hash functions into.
 
 All code is provided under the [MIT License](LICENSE) unless otherwise specified.
 
@@ -89,3 +89,7 @@ The internal flag `do_dump_buckets` can be set to generate a CSV-style table of 
 "crc32c",34907,34601,34826,
 "siphash64",34746,34586,35002,
 ```
+
+## See Also
+
+* If you want bigger/more: [smhasher](https://github.com/rurban/smhasher) and/or [smhasher3](https://gitlab.com/fwojcik/smhasher3).
